@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: nerf-sizing
+Version: 0.1.0
+Summary: NeRF-Sizing: 基于可微分流形学习的电路优化框架
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: torch>=2.1
+Requires-Dist: numpy>=1.24
+Requires-Dist: scipy>=1.10
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: matplotlib>=3.7
+Requires-Dist: tensorboard>=2.14
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"

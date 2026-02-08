@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nerf-sizing"
+version = "0.1.0"
+description = "NeRF-Sizing: 基于可微分流形学习的电路优化框架"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.1",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "pyyaml>=6.0",
+    "matplotlib>=3.7",
+    "tensorboard>=2.14",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nerf_sizing*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
