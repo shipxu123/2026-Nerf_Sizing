@@ -1,0 +1,135 @@
+# NeRF-Sizing on FALCON: Build and Run Guide
+
+This guide shows how to run the NeRF-Sizing example using the FALCON dataset bundled under `data/FALCON`. It covers:
+1. Environment setup
+2. Running the minimal FALCON MLP example
+3. Converting FALCON data into NeRF-Sizing `.npz`
+4. Training and optimizing with NeRF-Sizing
+
+All commands assume you are at the repo root.
+
+## Prerequisites
+
+- Python 3.10+
+- A working PyTorch installation (CPU or CUDA)
+- The FALCON dataset under `data/FALCON/dataset`
+
+The repository already includes a full FALCON checkout under `data/FALCON`. If your dataset lives elsewhere, set `FALCON_DIR` (examples below).
+
+## Environment Setup
+
+You can use either the FALCON conda environment or a pip environment for NeRF-Sizing.
+
+Option A: FALCON conda environment (recommended if you run the FALCON scripts)
+```bash
+conda env create -f data/FALCON/falcon.yml
+conda activate falcon
+pip install -e .
+```
+
+Option B: Pip environment (good for NeRF-Sizing only)
+```bash
+python -m venv .venv
+.\.venv\Scripts\activate  # Windows PowerShell
+pip install -r requirements.txt
+pip install -e .
+```
+
+Note: The FALCON minimal example uses `pandas`. The conda env includes it. If you use pip, install `pandas` manually.
+
+## Step 1: Run the Minimal FALCON Example (Optional Sanity Check)
+
+The helper script `scripts/build_falcon_example.sh` runs the minimal FALCON MLP example in `data/FALCON`.
+
+Linux/macOS (bash):
+```bash
+scripts/build_falcon_example.sh
+```
+
+Windows PowerShell (run from FALCON root directly):
+```powershell
+Set-Location data\FALCON
+python scripts\example_mlp_minimal.py
+Set-Location ..\..
+```
+
+If your FALCON repo is elsewhere:
+```bash
+export FALCON_DIR=/path/to/FALCON
+scripts/build_falcon_example.sh
+```
+```powershell
+$env:FALCON_DIR="D:\path\to\FALCON"
+```
+
+Common knobs for the minimal example:
+```bash
+python data/FALCON/scripts/example_mlp_minimal.py --per-topology 200 --max-topologies 6 --epochs 5
+```
+
+Artifacts are written to `data/FALCON/checkpoints/example_mlp_minimal`.
+
+## Step 2: Convert FALCON to NeRF-Sizing `.npz`
+
+The conversion config is `configs/falcon_cglna_conversion.yaml`. It expects the CGLNA topology under:
+`data/FALCON/dataset/LNA/CGLNA/dataset.csv`.
+
+Run the conversion:
+```bash
+python scripts/convert_falcon_to_nerf.py --config configs/falcon_cglna_conversion.yaml
+```
+
+Default output:
+- `data/falcon_cglna_train_data.npz`
+
+What the conversion does:
+- Reads `dataset.csv`
+- Extracts parameters: `C1 C2 Cb Ld Ls WN1`
+- Extracts metrics: `PowerGain Bandwidth DCPowerConsumption`
+- Samples up to `max_rows` (default 2000) using reservoir sampling
+
+If you want all rows, set `max_rows: 0` in `configs/falcon_cglna_conversion.yaml`.
+
+## Step 3: Train NeRF-Sizing on the FALCON Data
+
+Use the converted `.npz` to train the NeRF-Sizing surrogate:
+```bash
+python scripts/train.py --config configs/falcon_cglna_nerf.yaml --data data/falcon_cglna_train_data.npz
+```
+
+Outputs:
+- Checkpoint: `checkpoints/falcon_cglna/final.pt`
+- Plot: `outputs/training_curves.png`
+
+Important: The config must match the data dimensions.
+- `model.input_dim_p` must be 6
+- `model.output_dim_y` must be 3
+
+The provided `configs/falcon_cglna_nerf.yaml` matches the CGLNA conversion and uses dataset-derived bounds and targets.
+
+## Step 4: Optimize with the Trained Model
+
+Run optimization using the saved checkpoint:
+```bash
+python scripts/optimize.py --config configs/falcon_cglna_nerf.yaml --checkpoint checkpoints/falcon_cglna/final.pt
+```
+
+Outputs:
+- `outputs/optimization_trajectory.png` (if history is available)
+- `outputs/param_comparison.png`
+
+Note: The `configs/falcon_cglna_nerf.yaml` targets were set from dataset quantiles (Gain/BW 75th percentile, Power median). Adjust `specs` if you want stricter or looser goals.
+
+## Troubleshooting
+
+- `FALCON directory not found`: set `FALCON_DIR` or ensure `data/FALCON` exists.
+- `dataset.csv not found`: verify `data/FALCON/dataset/LNA/CGLNA/dataset.csv`.
+- `ModuleNotFoundError: pandas`: install `pandas` or use the FALCON conda environment.
+- CUDA not found: use CPU by passing `--device cpu` to `train.py` and `optimize.py`.
+
+## Reference Files
+
+- FALCON environment: `data/FALCON/falcon.yml`
+- FALCON minimal example: `data/FALCON/scripts/example_mlp_minimal.py`
+- Conversion config: `configs/falcon_cglna_conversion.yaml`
+- NeRF-Sizing configs: `configs/falcon_cglna_nerf.yaml`, `configs/default.yaml`, `configs/minimal.yaml`

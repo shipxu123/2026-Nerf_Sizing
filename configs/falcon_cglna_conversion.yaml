@@ -1,0 +1,21 @@
+falcon:
+  dataset_root: data/FALCON/dataset
+  topology: LNA/CGLNA
+  params:
+    - C1
+    - C2
+    - Cb
+    - Ld
+    - Ls
+    - WN1
+  metrics:
+    Gain: PowerGain
+    BW: Bandwidth
+    Power: DCPowerConsumption
+  pvt: [0.0, 1.8, 27.0]
+  max_rows: 2000
+  seed: 42
+  feasibility:
+    mode: all_ones
+
+output: data/falcon_cglna_train_data.npz

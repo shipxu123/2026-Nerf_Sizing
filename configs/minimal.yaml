@@ -1,0 +1,65 @@
+model:
+  input_dim_p: 6
+  input_dim_v: 3
+  hidden_dims: [64, 64]
+  output_dim_y: 3
+  use_positional_encoding: false
+  encoding_freqs: 4
+
+training:
+  epochs: 10
+  batch_size: 64
+  learning_rate: 1.0e-3
+  lambda_feasibility: 1.0
+  weight_decay: 0.0
+  scheduler: none
+  early_stopping_patience: 3
+  checkpoint_dir: checkpoints/minimal
+
+optimization:
+  num_starts: 4
+  max_iters: 100
+  learning_rate: 0.05
+  feasibility_threshold: 0.8
+  feasibility_weight: 10.0
+
+data:
+  num_samples: 50
+  train_ratio: 0.8
+  seed: 42
+
+specs:
+  - name: Gain
+    target: 60.0
+    direction: ">="
+  - name: BW
+    target: 1.0e+6
+    direction: ">="
+  - name: Power
+    target: 1.0e-3
+    direction: "<="
+
+params:
+  - name: W1
+    min: 1.0e-6
+    max: 100.0e-6
+  - name: L1
+    min: 0.18e-6
+    max: 5.0e-6
+  - name: W2
+    min: 1.0e-6
+    max: 100.0e-6
+  - name: L2
+    min: 0.18e-6
+    max: 5.0e-6
+  - name: W3
+    min: 1.0e-6
+    max: 200.0e-6
+  - name: L3
+    min: 0.18e-6
+    max: 5.0e-6
+
+pvt:
+  process: [0.0]
+  voltage: [1.8]
+  temperature: [27.0]

@@ -1,0 +1,67 @@
+model:
+  input_dim_p: 6
+  input_dim_v: 3
+  hidden_dims: [256, 256]
+  output_dim_y: 3
+  use_positional_encoding: false
+  encoding_freqs: 6
+
+training:
+  epochs: 500
+  batch_size: 256
+  learning_rate: 1.0e-3
+  lambda_feasibility: 1.0
+  weight_decay: 0.0
+  scheduler: cosine
+  early_stopping_patience: 50
+  checkpoint_dir: checkpoints/falcon_cglna
+
+optimization:
+  num_starts: 32
+  max_iters: 1000
+  learning_rate: 0.01
+  feasibility_threshold: 0.8
+  feasibility_weight: 10.0
+
+data:
+  num_samples: 5000
+  train_ratio: 0.8
+  seed: 42
+
+# Targets are derived from dataset quantiles for CGLNA (LNA/CGLNA):
+# Gain/BW: 75th percentile, Power: median.
+specs:
+  - name: Gain
+    target: 3.872
+    direction: ">="
+  - name: BW
+    target: 2.2e10
+    direction: ">="
+  - name: Power
+    target: 2.58e-2
+    direction: "<="
+
+params:
+  - name: C1
+    min: 1.0e-13
+    max: 6.0e-13
+  - name: C2
+    min: 5.0e-14
+    max: 3.0e-13
+  - name: Cb
+    min: 2.5e-13
+    max: 7.5e-13
+  - name: Ld
+    min: 8.0e-11
+    max: 5.8e-10
+  - name: Ls
+    min: 5.0e-10
+    max: 5.5e-9
+  - name: WN1
+    min: 1.2e-5
+    max: 2.3e-5
+
+pvt:
+  process: [0.0]
+  voltage: [1.8]
+  temperature: [27.0]
