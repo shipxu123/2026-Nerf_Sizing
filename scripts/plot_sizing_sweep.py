@@ -2,9 +2,14 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 import sys
 from pathlib import Path
 from typing import Iterable
+
+# Avoid writing Matplotlib cache to a quota-limited home directory.
+_repo_root = Path(__file__).resolve().parent.parent
+os.environ.setdefault("MPLCONFIGDIR", str(_repo_root / ".mplconfig"))
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -146,10 +151,22 @@ def plot_sweep(
 
         spec = specs.get(name)
         if spec:
-            target = spec["target"]
-            direction = spec["direction"]
-            ax.axhline(target, color="tab:red", linestyle="--", linewidth=1.2)
-            ax.set_title(f"{name} (target {direction} {target:g})")
+            target = spec.get("target")
+            direction = spec.get("direction", ">=")
+            target_numeric = None
+            if isinstance(target, (int, float, np.floating)):
+                target_numeric = float(target)
+            else:
+                try:
+                    target_numeric = float(target)
+                except (TypeError, ValueError):
+                    target_numeric = None
+
+            if target_numeric is not None:
+                ax.axhline(target_numeric, color="tab:red", linestyle="--", linewidth=1.2)
+                ax.set_title(f"{name} (target {direction} {target_numeric:g})")
+            else:
+                ax.set_title(f"{name} (target {direction} {target})")
         else:
             ax.set_title(name)
 
