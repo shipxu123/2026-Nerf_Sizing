@@ -30,7 +30,7 @@ pip install -e .
 Option B: Pip environment (good for NeRF-Sizing only)
 ```bash
 python -m venv .venv
-.\.venv\Scripts\activate  # Windows PowerShell
+source .venv/bin/activate
 pip install -r requirements.txt
 pip install -e .
 ```
@@ -40,26 +40,14 @@ Note: The FALCON minimal example uses `pandas`. The conda env includes it. If yo
 ## Step 1: Run the Minimal FALCON Example (Optional Sanity Check)
 
 The helper script `scripts/build_falcon_example.sh` runs the minimal FALCON MLP example in `data/FALCON`.
-
-Linux/macOS (bash):
 ```bash
 scripts/build_falcon_example.sh
-```
-
-Windows PowerShell (run from FALCON root directly):
-```powershell
-Set-Location data\FALCON
-python scripts\example_mlp_minimal.py
-Set-Location ..\..
 ```
 
 If your FALCON repo is elsewhere:
 ```bash
 export FALCON_DIR=/path/to/FALCON
 scripts/build_falcon_example.sh
-```
-```powershell
-$env:FALCON_DIR="D:\path\to\FALCON"
 ```
 
 Common knobs for the minimal example:
@@ -68,6 +56,34 @@ python data/FALCON/scripts/example_mlp_minimal.py --per-topology 200 --max-topol
 ```
 
 Artifacts are written to `data/FALCON/checkpoints/example_mlp_minimal`.
+
+## Step 1b: Run the FALCON GNN Performance Predictor Demo (Stage 2)
+
+This demo uses the Stage 2 GNN to predict analog performance metrics from circuit graphs.
+
+One-time preprocessing (creates the GNN datasets and scalers):
+```bash
+cd data/FALCON
+python scripts/save_gnn_data.py
+cd -
+```
+Run the demo:
+```bash
+scripts/build_falcon_gnn_demo.sh --samples 3
+```
+
+Quick training on a small subset (optional):
+```bash
+scripts/build_falcon_gnn_demo.sh --train-quick --epochs 5 --max-train 512 --max-val 128
+```
+
+Full Stage 2 training and evaluation (uses the original FALCON scripts):
+```bash
+cd data/FALCON
+python scripts/train_gnn.py
+python evaluation/gnn_forward_eval.py
+cd -
+```
 
 ## Step 2: Convert FALCON to NeRF-Sizing `.npz`
 
@@ -131,5 +147,7 @@ Note: The `configs/falcon_cglna_nerf.yaml` targets were set from dataset quantil
 
 - FALCON environment: `data/FALCON/falcon.yml`
 - FALCON minimal example: `data/FALCON/scripts/example_mlp_minimal.py`
+- FALCON GNN demo: `data/FALCON/scripts/example_gnn_minimal.py`
+- FALCON GNN demo wrapper: `scripts/build_falcon_gnn_demo.sh`
 - Conversion config: `configs/falcon_cglna_conversion.yaml`
 - NeRF-Sizing configs: `configs/falcon_cglna_nerf.yaml`, `configs/default.yaml`, `configs/minimal.yaml`
