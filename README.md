@@ -197,6 +197,9 @@ http://localhost:8000/visualizer/3d.html
 
 Load the generated `outputs/sweep_C1_Ld.csv`, then pick X/Y/Z columns to render a surface, mesh, or scatter.
 
+Multiple metrics in one view:
+- Select multiple Z metrics to render a grid of 3D surfaces (one per metric).
+
 ## Troubleshooting
 
 - `FALCON directory not found`: set `FALCON_DIR` or ensure `data/FALCON` exists.

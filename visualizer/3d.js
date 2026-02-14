@@ -12,7 +12,7 @@ const elDatasetSelect = document.getElementById("dataset-select");
 const elDatasetInfo = document.getElementById("dataset-info");
 const elXSelect = document.getElementById("x-select");
 const elYSelect = document.getElementById("y-select");
-const elZSelect = document.getElementById("z-select");
+const elMetricsList = document.getElementById("metrics-list");
 const elPlotType = document.getElementById("plot-type");
 const elPlotButton = document.getElementById("plot-button");
 const elClearButton = document.getElementById("clear-button");
@@ -96,11 +96,12 @@ function refreshDatasetSelect() {
   if (dataset) {
     elDatasetInfo.textContent = `${dataset.columns[0].length} rows | ${dataset.headers.join(", ")}`;
     refreshAxisSelectors(dataset);
+    refreshMetrics(dataset);
   }
 }
 
 function refreshAxisSelectors(dataset) {
-  [elXSelect, elYSelect, elZSelect].forEach((el) => {
+  [elXSelect, elYSelect].forEach((el) => {
     el.innerHTML = "";
     dataset.headers.forEach((name, idx) => {
       const opt = document.createElement("option");
@@ -112,8 +113,33 @@ function refreshAxisSelectors(dataset) {
   if (dataset.headers.length >= 3) {
     elXSelect.value = "0";
     elYSelect.value = "1";
-    elZSelect.value = "2";
   }
+}
+
+function refreshMetrics(dataset) {
+  const xIdx = Number(elXSelect.value || 0);
+  const yIdx = Number(elYSelect.value || 1);
+  elMetricsList.innerHTML = "";
+
+  dataset.headers.forEach((name, idx) => {
+    if (idx === xIdx || idx === yIdx) {
+      return;
+    }
+    const label = document.createElement("label");
+    label.className = "checkbox";
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.dataset.metricIndex = String(idx);
+    input.checked = true;
+
+    const span = document.createElement("span");
+    span.textContent = name;
+
+    label.appendChild(input);
+    label.appendChild(span);
+    elMetricsList.appendChild(label);
+  });
 }
 
 function extractXYZ(dataset, xIdx, yIdx, zIdx) {
@@ -194,79 +220,128 @@ function plotCurrent() {
 
   const xIdx = Number(elXSelect.value);
   const yIdx = Number(elYSelect.value);
-  const zIdx = Number(elZSelect.value);
-  if (xIdx === yIdx || xIdx === zIdx || yIdx === zIdx) {
-    throw new Error("X, Y, Z must be different columns.");
-  }
-
-  const { x, y, z } = extractXYZ(dataset, xIdx, yIdx, zIdx);
-  if (x.length === 0) {
-    throw new Error("No valid numeric rows found.");
+  if (xIdx === yIdx) {
+    throw new Error("X and Y must be different columns.");
   }
 
   const xscale = elXLog.checked ? "log" : "linear";
   const yscale = elYLog.checked ? "log" : "linear";
   const zscale = elZLog.checked ? "log" : "linear";
 
-  const mode = elPlotType.value;
-  let trace;
+  const selectedMetrics = Array.from(
+    elMetricsList.querySelectorAll("input[type='checkbox']")
+  )
+    .filter((input) => input.checked)
+    .map((input) => Number(input.dataset.metricIndex));
 
-  if (mode === "scatter") {
-    trace = {
-      type: "scatter3d",
-      mode: "markers",
-      x,
-      y,
-      z,
-      marker: { size: 3, color: z, colorscale: "Viridis", opacity: 0.85 },
+  if (selectedMetrics.length === 0) {
+    throw new Error("Select at least one Z metric.");
+  }
+
+  const mode = elPlotType.value;
+  const traces = [];
+  const scenes = {};
+  const annotations = [];
+
+  const cols = selectedMetrics.length > 1 ? Math.min(2, selectedMetrics.length) : 1;
+  const rows = Math.ceil(selectedMetrics.length / cols);
+
+  selectedMetrics.forEach((zIdx, i) => {
+    const { x, y, z } = extractXYZ(dataset, xIdx, yIdx, zIdx);
+    if (x.length === 0) {
+      return;
+    }
+
+    const sceneId = i === 0 ? "scene" : `scene${i + 1}`;
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const domainX = [col / cols, (col + 1) / cols];
+    const domainY = [1 - (row + 1) / rows, 1 - row / rows];
+
+    scenes[sceneId] = {
+      domain: { x: domainX, y: domainY },
+      xaxis: { title: dataset.headers[xIdx], type: xscale },
+      yaxis: { title: dataset.headers[yIdx], type: yscale },
+      zaxis: { title: dataset.headers[zIdx], type: zscale },
     };
-  } else if (mode === "mesh") {
-    trace = {
-      type: "mesh3d",
-      x,
-      y,
-      z,
-      intensity: z,
-      colorscale: "Viridis",
-      opacity: 0.9,
-    };
-  } else {
-    const grid = tryBuildGrid(x, y, z);
-    if (mode === "surface" || grid.complete) {
-      trace = {
-        type: "surface",
-        x: grid.xUnique,
-        y: grid.yUnique,
-        z: grid.grid,
-        colorscale: "Viridis",
-        contours: { z: { show: true, usecolormap: true, project: { z: true } } },
-      };
-      if (!grid.complete) {
-        setStatus(`Grid incomplete (${grid.missing} missing cells). Surface shown with gaps.`, true);
-      }
-    } else {
-      trace = {
+
+    annotations.push({
+      text: dataset.headers[zIdx],
+      x: domainX[0] + 0.02,
+      y: domainY[1] - 0.02,
+      xref: "paper",
+      yref: "paper",
+      showarrow: false,
+      font: { size: 12, color: "#1f1e1c" },
+    });
+
+    if (mode === "scatter") {
+      traces.push({
         type: "scatter3d",
         mode: "markers",
         x,
         y,
         z,
         marker: { size: 3, color: z, colorscale: "Viridis", opacity: 0.85 },
-      };
+        scene: sceneId,
+        name: dataset.headers[zIdx],
+      });
+      return;
+    }
+
+    if (mode === "mesh") {
+      traces.push({
+        type: "mesh3d",
+        x,
+        y,
+        z,
+        intensity: z,
+        colorscale: "Viridis",
+        opacity: 0.9,
+        scene: sceneId,
+        name: dataset.headers[zIdx],
+      });
+      return;
+    }
+
+    const grid = tryBuildGrid(x, y, z);
+    if (mode === "surface" || grid.complete) {
+      traces.push({
+        type: "surface",
+        x: grid.xUnique,
+        y: grid.yUnique,
+        z: grid.grid,
+        colorscale: "Viridis",
+        contours: { z: { show: true, usecolormap: true, project: { z: true } } },
+        scene: sceneId,
+        name: dataset.headers[zIdx],
+        showscale: false,
+      });
+      if (!grid.complete) {
+        setStatus(`Grid incomplete (${grid.missing} missing cells). Surface shown with gaps.`, true);
+      }
+    } else {
+      traces.push({
+        type: "scatter3d",
+        mode: "markers",
+        x,
+        y,
+        z,
+        marker: { size: 3, color: z, colorscale: "Viridis", opacity: 0.85 },
+        scene: sceneId,
+        name: dataset.headers[zIdx],
+      });
       setStatus("Auto mode: grid not complete, using scatter.", true);
     }
-  }
+  });
 
   const layout = {
     margin: { t: 40, r: 20, l: 10, b: 10 },
-    scene: {
-      xaxis: { title: dataset.headers[xIdx], type: xscale },
-      yaxis: { title: dataset.headers[yIdx], type: yscale },
-      zaxis: { title: dataset.headers[zIdx], type: zscale },
-    },
+    annotations,
+    ...scenes,
   };
 
-  Plotly.newPlot("plot", [trace], layout, { responsive: true });
+  Plotly.newPlot("plot", traces, layout, { responsive: true });
 }
 
 async function loadFromPath(path) {
@@ -305,6 +380,21 @@ elDatasetSelect.addEventListener("change", (event) => {
   const dataset = state.datasets.get(state.current);
   if (dataset) {
     refreshAxisSelectors(dataset);
+    refreshMetrics(dataset);
+  }
+});
+
+elXSelect.addEventListener("change", () => {
+  const dataset = state.datasets.get(state.current);
+  if (dataset) {
+    refreshMetrics(dataset);
+  }
+});
+
+elYSelect.addEventListener("change", () => {
+  const dataset = state.datasets.get(state.current);
+  if (dataset) {
+    refreshMetrics(dataset);
   }
 });
 
