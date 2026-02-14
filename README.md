@@ -136,6 +136,32 @@ Outputs:
 
 Note: The `configs/falcon_cglna_nerf.yaml` targets were set from dataset quantiles (Gain/BW 75th percentile, Power median). Adjust `specs` if you want stricter or looser goals.
 
+## Step 5: Visualize Sizing Sweeps
+
+Plot how predicted performance changes when sweeping one or more sizing parameters.
+
+Single-parameter sweep (default uses midpoints for other params):
+```bash
+python scripts/plot_sizing_sweep.py --config configs/falcon_cglna_nerf.yaml \
+  --checkpoint checkpoints/falcon_cglna/final.pt \
+  --params C1 --num-points 80 --plot-sigma --xscale log
+```
+
+Multiple sweeps (one plot per parameter):
+```bash
+python scripts/plot_sizing_sweep.py --config configs/falcon_cglna_nerf.yaml \
+  --checkpoint checkpoints/falcon_cglna/final.pt \
+  --params C1,C2,Ld --num-points 60
+```
+
+Outputs:
+- `outputs/sweep_<param>.png`
+- `outputs/sweep_<param>.csv`
+
+Notes:
+- The metric labels are taken from `specs` in the config and assumed to be in the same order as the training data.
+- Use `--base min|max|mid` or `--base-params` to change the fixed point for non-swept parameters.
+
 ## Troubleshooting
 
 - `FALCON directory not found`: set `FALCON_DIR` or ensure `data/FALCON` exists.
