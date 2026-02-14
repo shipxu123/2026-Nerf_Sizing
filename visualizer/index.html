@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NeRF-Sizing Sweep Visualizer</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div>
+          <h1>NeRF-Sizing Sweep Visualizer</h1>
+          <p>Load sweep CSV files and explore interactive curves.</p>
+        </div>
+        <div class="status" id="plotly-status">Plotly ready</div>
+      </header>
+
+      <section class="controls">
+        <div class="control">
+          <label class="label">Load CSV files</label>
+          <input id="file-input" type="file" accept=".csv" multiple />
+          <div class="hint">Use outputs/sweep_*.csv from plot_sizing_sweep.py</div>
+        </div>
+
+        <div class="control">
+          <label class="label">Load by path</label>
+          <div class="row">
+            <input id="path-input" type="text" placeholder="outputs/sweep_C1.csv" />
+            <button id="path-load">Load</button>
+          </div>
+          <div class="hint">Works when serving repo root with a local web server.</div>
+        </div>
+
+        <div class="control">
+          <label class="label">Dataset</label>
+          <select id="dataset-select"></select>
+          <div class="hint" id="dataset-info">No data loaded</div>
+        </div>
+
+        <div class="control">
+          <label class="label">Metrics</label>
+          <div class="metrics" id="metrics-list"></div>
+        </div>
+
+        <div class="control">
+          <label class="label">Axes</label>
+          <div class="row">
+            <label class="checkbox">
+              <input id="x-log" type="checkbox" />
+              <span>Log X</span>
+            </label>
+            <label class="checkbox">
+              <input id="y-log" type="checkbox" />
+              <span>Log Y</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="control">
+          <label class="label">Actions</label>
+          <div class="row">
+            <button id="plot-button">Plot</button>
+            <button id="clear-button" class="ghost">Clear</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="plot-area">
+        <div id="plot"></div>
+      </section>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

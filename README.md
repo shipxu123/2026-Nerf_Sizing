@@ -162,6 +162,41 @@ Notes:
 - The metric labels are taken from `specs` in the config and assumed to be in the same order as the training data.
 - Use `--base min|max|mid` or `--base-params` to change the fixed point for non-swept parameters.
 
+## Step 6: Interactive Web Visualizer
+
+The web visualizer loads the sweep CSVs and renders interactive plots in a browser.
+
+Start a local server from the repo root:
+```bash
+python -m http.server 8000
+```
+
+Open the visualizer in your browser:
+```text
+http://localhost:8000/visualizer/
+```
+
+Load data by either:
+- Selecting `outputs/sweep_*.csv` via the file picker.
+- Entering a path like `outputs/sweep_C1.csv` in the path loader.
+
+## Step 7: 3D Web Visualizer (2D Sweep)
+
+Generate a 2D sweep CSV:
+```bash
+python scripts/plot_sizing_sweep_2d.py --config configs/falcon_cglna_nerf.yaml \
+  --checkpoint checkpoints/falcon_cglna/final.pt \
+  --params C1,Ld --num-x 50 --num-y 50 \
+  --out outputs/sweep_C1_Ld.csv
+```
+
+Open the 3D visualizer:
+```text
+http://localhost:8000/visualizer/3d.html
+```
+
+Load the generated `outputs/sweep_C1_Ld.csv`, then pick X/Y/Z columns to render a surface, mesh, or scatter.
+
 ## Troubleshooting
 
 - `FALCON directory not found`: set `FALCON_DIR` or ensure `data/FALCON` exists.
